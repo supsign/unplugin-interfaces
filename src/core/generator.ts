@@ -2,7 +2,12 @@ import type { ResolvedOptions } from '../types'
 import fs from 'node:fs'
 import path from 'node:path'
 
-export function generateInterfaces(opts: ResolvedOptions): void {
+export interface GenerateResult {
+  files: number
+  interfaces: number
+}
+
+export function generateInterfaces(opts: ResolvedOptions): GenerateResult {
   const { interfaceDir, indexFile, outputFile, excludeFiles } = opts
 
   const files = fs.readdirSync(interfaceDir)
@@ -35,4 +40,9 @@ export function generateInterfaces(opts: ResolvedOptions): void {
   ]
   fs.mkdirSync(path.dirname(outputFile), { recursive: true })
   fs.writeFileSync(outputFile, globalLines.join('\n'), 'utf-8')
+
+  return {
+    files: files.length,
+    interfaces: interfaces.flatMap(i => i.names).length,
+  }
 }

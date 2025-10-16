@@ -6,21 +6,20 @@ import { generateInterfaces } from './core/generator'
 import { resolveOptions } from './core/paths'
 
 export const unpluginFactory: UnpluginFactory<Options | undefined> = (userOptions = {}, meta) => {
-  // Projekt-Root bestimmen (Vite hat ggf. ein anderes Root)
   const root
     = meta.framework === 'vite'
       ? (meta as any)?.vite?.server?.config?.root ?? process.cwd()
       : process.cwd()
 
   const opts = resolveOptions(root, userOptions)
-  const generate = () => generateInterfaces(opts)
 
   return {
     name: '@supsign/unplugin-interfaces',
 
     // 1) Einmal beim Build
     buildStart() {
-      generate()
+      const result = generateInterfaces(opts)
+      this.info(`Generated ${result.interfaces} interfaces from ${result.files} files`)
     },
 
     // 2) Vite-Dev-Server: Live-Watching
@@ -34,16 +33,23 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (userOption
           ignoreInitial: true,
         })
 
+        const log = (action: string) => {
+          const result = generateInterfaces(opts)
+          server.config.logger.info(
+            `${action}: ${result.interfaces} interfaces from ${result.files} files`,
+            { timestamp: true },
+          )
+        }
+
         watcher
-          .on('add', generate)
-          .on('change', generate)
-          .on('unlink', generate)
+          .on('add', () => log('Added file, regenerated'))
+          .on('change', () => log('Updated file, regenerated'))
+          .on('unlink', () => log('Removed file, regenerated'))
 
         server.watcher.on('close', () => watcher.close())
       },
     },
 
-    // Optional: Beispiel-Transform-Hooks als Platzhalter
     transformInclude(id) {
       return id.endsWith('main.ts')
     },
@@ -55,7 +61,6 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (userOption
 
 export const unplugin = /* #__PURE__ */ createUnplugin(unpluginFactory)
 
-// Multi-Bundler Exporte
 export default unplugin
 export const vite = unplugin.vite
 export const rollup = unplugin.rollup
