@@ -8,7 +8,6 @@ export default defineConfig({
     Unplugin({
       dir: 'src/interfaces',
       out: 'src/types/interfaces.d.ts',
-      exclude: ['base.ts'],
     }),
   ],
 })

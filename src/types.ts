@@ -9,7 +9,6 @@ export interface Options {
 
 export interface ResolvedOptions {
   interfaceDir: string
-  indexFile: string
   outputFile: string
   excludeFiles: Set<string>
 }

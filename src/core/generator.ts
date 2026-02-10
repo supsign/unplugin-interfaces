@@ -8,7 +8,7 @@ export interface GenerateResult {
 }
 
 export function generateInterfaces(opts: ResolvedOptions): GenerateResult {
-  const { interfaceDir, indexFile, outputFile, excludeFiles } = opts
+  const { interfaceDir, outputFile, excludeFiles } = opts
 
   const files = fs.readdirSync(interfaceDir)
     .filter(file => file.endsWith('.ts') && file !== 'index.ts' && !excludeFiles.has(file))
@@ -19,31 +19,38 @@ export function generateInterfaces(opts: ResolvedOptions): GenerateResult {
     const filePath = path.join(interfaceDir, file)
     const content = fs.readFileSync(filePath, 'utf-8')
 
-    // Find exported interfaces: export interface Name
-    const interfaceMatches = [...content.matchAll(/export\s+interface\s+(\w+)/g)]
+    // Find exported interfaces: export interface Name (single line only)
+    const interfaceMatches = [...content.matchAll(/^export\s+interface\s+([A-Za-z_$][\w$]*)/gm)]
     const interfaceNames = interfaceMatches.map(m => m[1])
 
-    // Find named exports: export { Name1, Name2 }
+    // Find named exports: export { Name1, Name2 } (but not export type { })
     const namedExportMatches = [...content.matchAll(/export\s*\{\s*([^}]+)\s*\}/g)]
-    const namedExportNames = namedExportMatches.flatMap(m =>
-      m[1].split(',').map(item => item.trim().split(/\s+as\s+/)[0].trim()),
+    const namedExportNames = namedExportMatches
+      .filter(m => !content.substring(Math.max(0, m.index! - 10), m.index!).includes('type'))
+      .flatMap(m =>
+        m[1].split(',').map(item => item.trim().split(/\s+as\s+/)[0].trim()).filter(name => name.length > 0),
+      )
+
+    // Find typed exports: export type { Name1, Name2 }
+    const typeExportMatches = [...content.matchAll(/export\s+type\s*\{\s*([^}]+)\s*\}/g)]
+    const typeExportNames = typeExportMatches.flatMap(m =>
+      m[1].split(',').map(item => item.trim().split(/\s+as\s+/)[0].trim()).filter(name => name.length > 0),
     )
 
-    const names = [...interfaceNames, ...namedExportNames]
+    // Remove duplicates and filter out empty names
+    const allNames = [...interfaceNames, ...namedExportNames, ...typeExportNames]
+    const names = [...new Set(allNames)].filter(name => name && name !== 'export')
+
     if (names.length)
       interfaces.push({ file, names })
   }
 
-  // index.ts
-  const exportLines = interfaces.map(i => `export * from './${path.basename(i.file, '.ts')}';`)
-  fs.writeFileSync(indexFile, exportLines.join('\n'), 'utf-8')
-
-  // interfaces.d.ts
+  // interfaces.d.ts - clean global types with inline imports
   const globalLines = [
-    `import type * as Interfaces from '../interfaces';`,
-    '',
     'declare global {',
-    ...interfaces.flatMap(i => i.names.map(name => `  export interface ${name} extends Interfaces.${name} {}`)),
+    ...interfaces.flatMap(i => i.names.map(name =>
+      `  type ${name} = import('../interfaces/${path.basename(i.file, '.ts')}').${name};`,
+    )),
     '}',
     '',
     'export {};',

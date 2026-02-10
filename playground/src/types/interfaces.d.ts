@@ -1,8 +1,10 @@
-import type * as Interfaces from '../interfaces';
-
 declare global {
-  export interface Task extends Interfaces.Task {}
-  export interface User extends Interfaces.User {}
+  type Base = import('../interfaces/base').Base;
+  type Contact = import('../interfaces/base').Contact;
+  type HubMicrosoftLicense = import('../interfaces/base').HubMicrosoftLicense;
+  type Task = import('../interfaces/task').Task;
+  type User = import('../interfaces/user').User;
+  type UserProfile = import('../interfaces/user').UserProfile;
 }
 
 export {};
