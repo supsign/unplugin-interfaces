@@ -1,5 +1,6 @@
 import type { UnpluginFactory } from 'unplugin'
 import type { Options } from './types'
+import process from 'node:process'
 import chokidar from 'chokidar'
 import { createUnplugin } from 'unplugin'
 import { generateInterfaces } from './core/generator'
@@ -33,7 +34,7 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (userOption
           ignoreInitial: true,
         })
 
-        const log = (action: string) => {
+        const log = (action: string): void => {
           const result = generateInterfaces(opts)
           server.config.logger.info(
             `${action}: ${result.interfaces} interfaces from ${result.files} files`,

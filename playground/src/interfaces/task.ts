@@ -8,7 +8,7 @@ export interface Task extends Base {
   priority: number
 }
 
-interface TaskCategory {
+interface _TaskCategory {
   id: string
   name: string
   color: string

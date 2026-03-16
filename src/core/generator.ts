@@ -24,7 +24,7 @@ export function generateInterfaces(opts: ResolvedOptions): GenerateResult {
     const interfaceNames = interfaceMatches.map(m => m[1])
 
     // Find named exports: export { Name1, Name2 } (but not export type { })
-    const namedExportMatches = [...content.matchAll(/export\s*\{\s*([^}]+)\s*\}/g)]
+    const namedExportMatches = [...content.matchAll(/export\s*\{([^}]+)\}/g)]
     const namedExportNames = namedExportMatches
       .filter(m => !content.substring(Math.max(0, m.index! - 10), m.index!).includes('type'))
       .flatMap(m =>
@@ -32,7 +32,7 @@ export function generateInterfaces(opts: ResolvedOptions): GenerateResult {
       )
 
     // Find typed exports: export type { Name1, Name2 }
-    const typeExportMatches = [...content.matchAll(/export\s+type\s*\{\s*([^}]+)\s*\}/g)]
+    const typeExportMatches = [...content.matchAll(/export\s+type\s*\{([^}]+)\}/g)]
     const typeExportNames = typeExportMatches.flatMap(m =>
       m[1].split(',').map(item => item.trim().split(/\s+as\s+/)[0].trim()).filter(name => name.length > 0),
     )
@@ -49,11 +49,12 @@ export function generateInterfaces(opts: ResolvedOptions): GenerateResult {
   const globalLines = [
     'declare global {',
     ...interfaces.flatMap(i => i.names.map(name =>
-      `  type ${name} = import('../interfaces/${path.basename(i.file, '.ts')}').${name};`,
+      `  type ${name} = import('../interfaces/${path.basename(i.file, '.ts')}').${name}`,
     )),
     '}',
     '',
-    'export {};',
+    'export {}',
+    '',
   ]
   fs.mkdirSync(path.dirname(outputFile), { recursive: true })
   fs.writeFileSync(outputFile, globalLines.join('\n'), 'utf-8')
