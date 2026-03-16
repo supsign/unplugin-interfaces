@@ -1,4 +1,5 @@
-import { createVitePlugin } from 'unplugin'
-import { unpluginFactory } from '.'
+import { createVitePlugin } from 'unplugin';
 
-export default createVitePlugin(unpluginFactory)
+import { unpluginFactory } from '.';
+
+export default createVitePlugin(unpluginFactory);

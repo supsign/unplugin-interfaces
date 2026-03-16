@@ -1,4 +1,5 @@
-import { createEsbuildPlugin } from 'unplugin'
-import { unpluginFactory } from '.'
+import { createEsbuildPlugin } from 'unplugin';
 
-export default createEsbuildPlugin(unpluginFactory)
+import { unpluginFactory } from '.';
+
+export default createEsbuildPlugin(unpluginFactory);

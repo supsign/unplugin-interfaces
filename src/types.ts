@@ -1,14 +1,14 @@
 export interface Options {
   /** Verzeichnis mit deinen Interface-Dateien */
-  dir?: string
+  dir?: string;
   /** Dateien (Dateinamen) ausschliessen */
-  exclude?: string[]
+  exclude?: string[];
   /** Pfad zur generierten globalen d.ts-Datei */
-  out?: string
+  out?: string;
 }
 
 export interface ResolvedOptions {
-  interfaceDir: string
-  outputFile: string
-  excludeFiles: Set<string>
+  interfaceDir: string;
+  outputFile: string;
+  excludeFiles: Set<string>;
 }

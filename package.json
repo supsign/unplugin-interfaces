@@ -1,25 +1,38 @@
 {
   "name": "@supsign/unplugin-interfaces",
-  "type": "module",
   "version": "1.0.0",
-  "packageManager": "pnpm@10.18.3",
   "description": "",
-  "license": "MIT",
+  "keywords": [
+    "rollup",
+    "transform",
+    "unplugin",
+    "vite",
+    "webpack"
+  ],
   "homepage": "https://github.com/supsign/unplugin-interfaces#readme",
+  "bugs": {
+    "url": "https://github.com/supsign/unplugin-interfaces/issues"
+  },
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/supsign/unplugin-interfaces.git"
   },
-  "bugs": {
-    "url": "https://github.com/supsign/unplugin-interfaces/issues"
-  },
-  "keywords": [
-    "unplugin",
-    "vite",
-    "webpack",
-    "rollup",
-    "transform"
+  "files": [
+    "dist"
   ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "*": [
+        "./dist/*",
+        "./*"
+      ]
+    }
+  },
   "exports": {
     ".": "./dist/index.js",
     "./astro": "./dist/astro.js",
@@ -33,29 +46,37 @@
     "./webpack": "./dist/webpack.js",
     "./package.json": "./package.json"
   },
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "typesVersions": {
-    "*": {
-      "*": [
-        "./dist/*",
-        "./*"
-      ]
-    }
-  },
-  "files": [
-    "dist"
-  ],
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown -w",
-    "lint": "eslint .",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "lint": "oxlint .",
     "play": "npm -C playground run dev",
     "prepublishOnly": "npm run build",
     "release": "bumpp && pnpm publish",
     "start": "tsx src/index.ts",
     "test": "vitest"
+  },
+  "dependencies": {
+    "unplugin": "^3.0.0"
+  },
+  "devDependencies": {
+    "@nuxt/kit": "^4.4.2",
+    "@nuxt/schema": "^4.4.2",
+    "@types/node": "^25.5.0",
+    "bumpp": "^11.0.1",
+    "chokidar": "^5.0.0",
+    "nodemon": "^3.1.14",
+    "oxfmt": "^0.40.0",
+    "oxlint": "^1.55.0",
+    "rollup": "^4.59.0",
+    "tsdown": "^0.21.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.0",
+    "vitest": "^4.1.0",
+    "webpack": "^5.105.4"
   },
   "peerDependencies": {
     "@farmfe/core": ">=1",
@@ -89,24 +110,5 @@
       "optional": true
     }
   },
-  "dependencies": {
-    "unplugin": "^3.0.0"
-  },
-  "devDependencies": {
-    "@antfu/eslint-config": "^7.7.2",
-    "@nuxt/kit": "^4.4.2",
-    "@nuxt/schema": "^4.4.2",
-    "@types/node": "^25.5.0",
-    "bumpp": "^11.0.1",
-    "chokidar": "^5.0.0",
-    "eslint": "^10.0.3",
-    "nodemon": "^3.1.14",
-    "rollup": "^4.59.0",
-    "tsdown": "^0.21.3",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
-    "vite": "^8.0.0",
-    "vitest": "^4.1.0",
-    "webpack": "^5.105.4"
-  }
+  "packageManager": "pnpm@10.18.3"
 }
