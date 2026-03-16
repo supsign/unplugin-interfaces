@@ -11,57 +11,71 @@ const RE_AS_SPLIT = /\s+as\s+/;
 export interface GenerateResult {
   files: number;
   interfaces: number;
+  skipped?: boolean;
 }
 
-export function generateInterfaces(opts: ResolvedOptions): GenerateResult {
-  const { interfaceDir, outputFile, excludeFiles } = opts;
+function parseNames(content: string): string[] {
+  const interfaceNames = [...content.matchAll(RE_INTERFACE)].map((match) => match[1]);
 
-  const files = fs
-    .readdirSync(interfaceDir)
-    .filter((file) => file.endsWith('.ts') && file !== 'index.ts' && !excludeFiles.has(file));
-
-  const interfaces: { file: string; names: string[] }[] = [];
-
-  for (const file of files) {
-    const filePath = path.join(interfaceDir, file);
-    const content = fs.readFileSync(filePath, 'utf8');
-
-    // Find exported interfaces: export interface Name (single line only)
-    const interfaceMatches = [...content.matchAll(RE_INTERFACE)];
-    const interfaceNames = interfaceMatches.map((match) => match[1]);
-
-    // Find named exports: export { Name1, Name2 } (but not export type { })
-    const namedExportMatches = [...content.matchAll(RE_NAMED_EXPORT)];
-    const namedExportNames = namedExportMatches
-      .filter(
-        (match) => !content.substring(Math.max(0, match.index! - 10), match.index!).includes('type')
-      )
-      .flatMap((match) =>
-        match[1]
-          .split(',')
-          .map((item) => item.trim().split(RE_AS_SPLIT)[0].trim())
-          .filter((name) => name.length > 0)
-      );
-
-    // Find typed exports: export type { Name1, Name2 }
-    const typeExportMatches = [...content.matchAll(RE_TYPE_EXPORT)];
-    const typeExportNames = typeExportMatches.flatMap((match) =>
+  const namedExportNames = [...content.matchAll(RE_NAMED_EXPORT)]
+    .filter(
+      (match) => !content.substring(Math.max(0, match.index! - 10), match.index!).includes('type')
+    )
+    .flatMap((match) =>
       match[1]
         .split(',')
         .map((item) => item.trim().split(RE_AS_SPLIT)[0].trim())
         .filter((name) => name.length > 0)
     );
 
-    // Remove duplicates and filter out empty names
-    const allNames = [...interfaceNames, ...namedExportNames, ...typeExportNames];
-    const names = [...new Set(allNames)].filter((name) => name && name !== 'export');
+  const typeExportNames = [...content.matchAll(RE_TYPE_EXPORT)].flatMap((match) =>
+    match[1]
+      .split(',')
+      .map((item) => item.trim().split(RE_AS_SPLIT)[0].trim())
+      .filter((name) => name.length > 0)
+  );
 
+  return [...new Set([...interfaceNames, ...namedExportNames, ...typeExportNames])].filter(
+    (name) => name && name !== 'export'
+  );
+}
+
+export async function generateInterfaces(opts: ResolvedOptions): Promise<GenerateResult> {
+  const { interfaceDir, outputFile, excludeFiles } = opts;
+
+  const allFiles = await fs.promises.readdir(interfaceDir);
+  const files = allFiles.filter(
+    (file) => file.endsWith('.ts') && file !== 'index.ts' && !excludeFiles.has(file)
+  );
+
+  // mtime-based cache: skip if output is newer than all interface files
+  try {
+    const outputStat = await fs.promises.stat(outputFile);
+    const outputMtime = outputStat.mtimeMs;
+    const mtimes = await Promise.all(
+      files.map((file) =>
+        fs.promises.stat(path.join(interfaceDir, file)).then((stat) => stat.mtimeMs)
+      )
+    );
+    if (mtimes.every((mtime) => mtime <= outputMtime)) {
+      return { files: files.length, interfaces: 0, skipped: true };
+    }
+  } catch {
+    // output file doesn't exist yet — continue
+  }
+
+  const contents = await Promise.all(
+    files.map((file) => fs.promises.readFile(path.join(interfaceDir, file), 'utf8'))
+  );
+
+  const interfaces: { file: string; names: string[] }[] = [];
+  for (const [idx, file] of files.entries()) {
+    const names = parseNames(contents[idx]);
     if (names.length) {
       interfaces.push({ file, names });
     }
   }
 
-  // interfaces.d.ts - clean global types with inline imports
   const globalLines = [
     'declare global {',
     ...interfaces.flatMap((iface) =>
@@ -75,8 +89,9 @@ export function generateInterfaces(opts: ResolvedOptions): GenerateResult {
     'export {};',
     '',
   ];
-  fs.mkdirSync(path.dirname(outputFile), { recursive: true });
-  fs.writeFileSync(outputFile, globalLines.join('\n'), 'utf8');
+
+  await fs.promises.mkdir(path.dirname(outputFile), { recursive: true });
+  await fs.promises.writeFile(outputFile, globalLines.join('\n'), 'utf8');
 
   return { files: files.length, interfaces: interfaces.flatMap((iface) => iface.names).length };
 }

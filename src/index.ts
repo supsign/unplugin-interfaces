@@ -15,19 +15,30 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (userOption
       : process.cwd();
 
   const opts = resolveOptions(root, userOptions);
+  let isDevServer = false;
 
   return {
     name: '@supsign/unplugin-interfaces',
 
-    // 1) Einmal beim Build
-    buildStart() {
-      const result = generateInterfaces(opts);
+    async buildStart() {
+      if (isDevServer) {
+        return;
+      }
+      const result = await generateInterfaces(opts);
       this.info(`Generated ${result.interfaces} interfaces from ${result.files} files`);
     },
 
-    // 2) Vite-Dev-Server: Live-Watching
     vite: {
       configureServer(server) {
+        isDevServer = true;
+
+        generateInterfaces(opts).then((result) => {
+          server.config.logger.info(
+            `@supsign/unplugin-interfaces: Generated ${result.interfaces} interfaces from ${result.files} files`,
+            { timestamp: true }
+          );
+        });
+
         const watcher = chokidar.watch(opts.interfaceDir, {
           ignored: (filePath) =>
             filePath.endsWith('index.ts') ||
@@ -37,11 +48,12 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (userOption
         });
 
         const log = (action: string): void => {
-          const result = generateInterfaces(opts);
-          server.config.logger.info(
-            `${action}: ${result.interfaces} interfaces from ${result.files} files`,
-            { timestamp: true }
-          );
+          generateInterfaces(opts).then((result) => {
+            server.config.logger.info(
+              `${action}: ${result.interfaces} interfaces from ${result.files} files`,
+              { timestamp: true }
+            );
+          });
         };
 
         watcher
@@ -51,13 +63,6 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (userOption
 
         server.watcher.on('close', () => watcher.close());
       },
-    },
-
-    transformInclude(id) {
-      return id.endsWith('main.ts');
-    },
-    transform(code) {
-      return code.replace('__UNPLUGIN__', 'Hello Unplugin!');
     },
   };
 };
