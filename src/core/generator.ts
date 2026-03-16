@@ -2,6 +2,11 @@ import type { ResolvedOptions } from '../types'
 import fs from 'node:fs'
 import path from 'node:path'
 
+const RE_INTERFACE = /^export\s+interface\s+([A-Za-z_$][\w$]*)/gm
+const RE_NAMED_EXPORT = /export\s*\{([^}]+)\}/g
+const RE_TYPE_EXPORT = /export\s+type\s*\{([^}]+)\}/g
+const RE_AS_SPLIT = /\s+as\s+/
+
 export interface GenerateResult {
   files: number
   interfaces: number
@@ -20,21 +25,21 @@ export function generateInterfaces(opts: ResolvedOptions): GenerateResult {
     const content = fs.readFileSync(filePath, 'utf-8')
 
     // Find exported interfaces: export interface Name (single line only)
-    const interfaceMatches = [...content.matchAll(/^export\s+interface\s+([A-Za-z_$][\w$]*)/gm)]
+    const interfaceMatches = [...content.matchAll(RE_INTERFACE)]
     const interfaceNames = interfaceMatches.map(m => m[1])
 
     // Find named exports: export { Name1, Name2 } (but not export type { })
-    const namedExportMatches = [...content.matchAll(/export\s*\{([^}]+)\}/g)]
+    const namedExportMatches = [...content.matchAll(RE_NAMED_EXPORT)]
     const namedExportNames = namedExportMatches
       .filter(m => !content.substring(Math.max(0, m.index! - 10), m.index!).includes('type'))
       .flatMap(m =>
-        m[1].split(',').map(item => item.trim().split(/\s+as\s+/)[0].trim()).filter(name => name.length > 0),
+        m[1].split(',').map(item => item.trim().split(RE_AS_SPLIT)[0].trim()).filter(name => name.length > 0),
       )
 
     // Find typed exports: export type { Name1, Name2 }
-    const typeExportMatches = [...content.matchAll(/export\s+type\s*\{([^}]+)\}/g)]
+    const typeExportMatches = [...content.matchAll(RE_TYPE_EXPORT)]
     const typeExportNames = typeExportMatches.flatMap(m =>
-      m[1].split(',').map(item => item.trim().split(/\s+as\s+/)[0].trim()).filter(name => name.length > 0),
+      m[1].split(',').map(item => item.trim().split(RE_AS_SPLIT)[0].trim()).filter(name => name.length > 0),
     )
 
     // Remove duplicates and filter out empty names
