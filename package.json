@@ -46,6 +46,9 @@
     "./webpack": "./dist/webpack.js",
     "./package.json": "./package.json"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown -w",
@@ -63,11 +66,11 @@
   },
   "devDependencies": {
     "@nuxt/kit": "^4.4.2",
-    "esbuild": "^0.27.0",
     "@nuxt/schema": "^4.4.2",
     "@types/node": "^25.5.0",
     "bumpp": "^11.0.1",
     "chokidar": "^5.0.0",
+    "esbuild": "^0.27.0",
     "nodemon": "^3.1.14",
     "oxfmt": "^0.40.0",
     "oxlint": "^1.55.0",
