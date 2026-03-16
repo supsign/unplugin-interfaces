@@ -11,6 +11,9 @@ importers:
       '@farmfe/core':
         specifier: '>=1'
         version: 1.7.5
+      esbuild:
+        specifier: '*'
+        version: 0.27.4
       unplugin:
         specifier: ^2.3.10
         version: 2.3.10
@@ -33,9 +36,6 @@ importers:
       chokidar:
         specifier: ^4.0.3
         version: 4.0.3
-      esbuild:
-        specifier: ^0.27.0
-        version: 0.27.4
       eslint:
         specifier: ^9.37.0
         version: 9.38.0(jiti@2.6.1)
