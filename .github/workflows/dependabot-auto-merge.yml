@@ -1,12 +1,18 @@
 name: Dependabot Auto-Merge
 
-# Auto-gemergt werden nur patch- und minor-Updates von Dependabot. Major-Updates
-# bleiben bewusst offen fuer manuelles Review.
+# Policy: NUR patch-Updates werden automatisch gemergt. Minor und Major bleiben
+# reviewpflichtig.
+#
+# Grund fuer die Zurueckhaltung bei minor: die Testabdeckung in diesen Repos ist
+# duenn (einstellige bis niedrig zweistellige Testzahlen bei mehreren tausend
+# Commits). Ein gruener Lauf belegt damit nicht, dass ein minor-Update
+# folgenlos ist -- er belegt nur, dass die wenigen abgedeckten Pfade halten.
 #
 # Voraussetzung: Auto-Merge muss in den Repo-Settings aktiviert sein UND der
-# Branch braucht einen Required-Status-Check. Ohne Required-Check ist der PR
-# nicht "blocked", und `gh pr merge --auto` bricht mit "Pull request is in
-# clean status" ab -- der Merge passiert dann gar nicht.
+# Default-Branch braucht einen Required-Status-Check. Ohne Required-Check ist
+# der PR nicht "blocked" und `gh pr merge --auto` bricht ab -- der Merge
+# passiert dann gar nicht. Das ist die sichere Richtung, aber die Automatik
+# laeuft dann eben auch nicht.
 on: pull_request
 
 permissions:
@@ -27,12 +33,15 @@ jobs:
               id: metadata
               uses: dependabot/fetch-metadata@v3
 
-            - name: Auto-Merge fuer patch und minor aktivieren
-              if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
-              run: gh pr merge --auto --squash "$PR_URL"
+            - name: Auto-Merge nur fuer patch aktivieren
+              if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+              run: |
+                  if ! gh pr merge --auto --squash "$PR_URL"; then
+                      echo "::warning::Auto-Merge konnte nicht aktiviert werden. Meist fehlt dem Default-Branch ein Required-Status-Check, dann gilt der PR als nicht blockiert."
+                  fi
 
             # Bei Gruppen-PRs meldet fetch-metadata das hoechste Update im Bundle --
-            # ein Major in der Gruppe kennzeichnet also den ganzen PR als reviewpflichtig.
-            - name: Major-Updates fuer manuelles Review markieren
-              if: steps.metadata.outputs.update-type == 'version-update:semver-major'
+            # ein Minor oder Major in der Gruppe macht also den ganzen PR reviewpflichtig.
+            - name: Minor und Major fuer manuelles Review markieren
+              if: steps.metadata.outputs.update-type == 'version-update:semver-minor' || steps.metadata.outputs.update-type == 'version-update:semver-major'
               run: gh pr edit "$PR_URL" --add-label needs-manual-review
