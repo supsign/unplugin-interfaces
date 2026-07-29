@@ -70,12 +70,12 @@
     "@types/node": "^25.5.0",
     "bumpp": "^11.0.1",
     "chokidar": "^5.0.0",
-    "esbuild": "^0.27.0",
+    "esbuild": "^0.28.1",
     "nodemon": "^3.1.14",
-    "oxfmt": "^0.40.0",
+    "oxfmt": "^0.60.0",
     "oxlint": "^1.55.0",
     "rollup": "^4.59.0",
-    "tsdown": "^0.21.3",
+    "tsdown": "^0.22.13",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vite": "^8.0.0",
@@ -115,7 +115,7 @@
     }
   },
   "overrides": {
-    "esbuild": "^0.27.0",
+    "esbuild": "^0.28.1",
     "vite": "^8.0.0"
   },
   "packageManager": "pnpm@10.18.3"
