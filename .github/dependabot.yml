@@ -1,0 +1,61 @@
+version: 2
+
+updates:
+    - package-ecosystem: npm
+      directory: /
+      schedule:
+          interval: weekly
+          day: monday
+          time: '06:00'
+          timezone: Europe/Zurich
+      open-pull-requests-limit: 5
+      # Neue Releases erst nach ein paar Tagen aufgreifen, damit zurueckgezogene
+      # oder sofort nachgepatchte Versionen gar nicht erst einen PR ausloesen.
+      cooldown:
+          default-days: 7
+      commit-message:
+          # prefix bewusst nur 'build': include:scope ergaenzt '(deps)' bzw.
+          # '(deps-dev)' selbst. Mit prefix 'build(deps)' wuerde daraus
+          # 'build(deps)(deps): ...'.
+          prefix: build
+          prefix-development: build
+          include: scope
+      groups:
+          # Alle offenen Security-Advisories in einen PR statt in je einen.
+          npm-security:
+              applies-to: security-updates
+              patterns:
+                  - '*'
+          # Routine-Updates: patch + minor gebuendelt, wird bei gruener CI
+          # automatisch gemergt (siehe .github/workflows/dependabot-auto-merge.yml).
+          npm-routine:
+              applies-to: version-updates
+              patterns:
+                  - '*'
+              update-types:
+                  - minor
+                  - patch
+      # Major-Updates werden bewusst NICHT gruppiert und NICHT auto-gemergt --
+      # die bleiben einzelne PRs mit manuellem Review. Bei einem veroeffentlichten
+      # Paket wandern Breaking Changes sonst ungeprueft zu den Nutzern weiter.
+
+    - package-ecosystem: github-actions
+      directory: /
+      schedule:
+          interval: monthly
+          timezone: Europe/Zurich
+      open-pull-requests-limit: 3
+      # github-actions unterstuetzt nur default-days -- die semver-*-Keys werden
+      # von Dependabot als ungueltig abgelehnt und blockieren die ganze Config.
+      cooldown:
+          default-days: 7
+      commit-message:
+          prefix: build
+          include: scope
+      groups:
+          github-actions:
+              patterns:
+                  - '*'
+              update-types:
+                  - minor
+                  - patch

@@ -1,0 +1,38 @@
+name: Dependabot Auto-Merge
+
+# Auto-gemergt werden nur patch- und minor-Updates von Dependabot. Major-Updates
+# bleiben bewusst offen fuer manuelles Review.
+#
+# Voraussetzung: Auto-Merge muss in den Repo-Settings aktiviert sein UND der
+# Branch braucht einen Required-Status-Check. Ohne Required-Check ist der PR
+# nicht "blocked", und `gh pr merge --auto` bricht mit "Pull request is in
+# clean status" ab -- der Merge passiert dann gar nicht.
+on: pull_request
+
+permissions:
+    contents: write
+    pull-requests: write
+
+jobs:
+    auto-merge:
+        runs-on: ubuntu-latest
+        if: github.actor == 'dependabot[bot]'
+
+        env:
+            PR_URL: ${{ github.event.pull_request.html_url }}
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+        steps:
+            - name: Dependabot-Metadaten holen
+              id: metadata
+              uses: dependabot/fetch-metadata@v3
+
+            - name: Auto-Merge fuer patch und minor aktivieren
+              if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
+              run: gh pr merge --auto --squash "$PR_URL"
+
+            # Bei Gruppen-PRs meldet fetch-metadata das hoechste Update im Bundle --
+            # ein Major in der Gruppe kennzeichnet also den ganzen PR als reviewpflichtig.
+            - name: Major-Updates fuer manuelles Review markieren
+              if: steps.metadata.outputs.update-type == 'version-update:semver-major'
+              run: gh pr edit "$PR_URL" --add-label needs-manual-review
