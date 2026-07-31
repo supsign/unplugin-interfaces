@@ -55,11 +55,14 @@
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "lint": "oxlint .",
-    "play": "npm -C playground run dev",
-    "prepublishOnly": "npm run build",
+    "play": "pnpm -C playground run dev",
+    "prepublishOnly": "pnpm run build",
     "release": "bumpp && pnpm publish",
     "start": "tsx src/index.ts",
-    "test": "vitest"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "unplugin": "^3.0.0"
@@ -67,8 +70,9 @@
   "devDependencies": {
     "@nuxt/kit": "^4.4.2",
     "@nuxt/schema": "^4.4.2",
-    "@types/node": "^25.5.0",
-    "bumpp": "^11.0.1",
+    "@types/node": "^26.1.2",
+    "@vitest/coverage-v8": "^4.1.10",
+    "bumpp": "^12.1.1",
     "chokidar": "^5.0.0",
     "esbuild": "^0.28.1",
     "nodemon": "^3.1.14",
@@ -114,9 +118,14 @@
       "optional": true
     }
   },
-  "overrides": {
-    "esbuild": "^0.28.1",
-    "vite": "^8.0.0"
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
   },
-  "packageManager": "pnpm@10.18.3"
+  "packageManager": "pnpm@10.18.3",
+  "pnpm": {
+    "overrides": {
+      "esbuild": "^0.28.1",
+      "vite": "^8.0.0"
+    }
+  }
 }

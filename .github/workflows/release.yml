@@ -5,20 +5,35 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
+    name: Changelog veroeffentlichen
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
+          # changelogithub liest die Commits seit dem letzten Tag --
+          # mit dem flachen Standard-Checkout waere die Historie leer.
           fetch-depth: 0
 
-      - uses: actions/setup-node@v3
+      - name: pnpm einrichten
+        uses: pnpm/action-setup@v6
+
+      - name: Node einrichten
+        uses: actions/setup-node@v7
         with:
           node-version: lts/*
 
-      - run: npx changelogithub
+      - name: Changelog erzeugen
+        run: pnpm dlx changelogithub
         env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

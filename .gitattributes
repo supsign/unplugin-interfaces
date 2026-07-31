@@ -1,0 +1,13 @@
+# Working Tree ueberall LF. Ohne das checkt Git auf Windows mit CRLF aus und
+# `oxfmt --check` (endOfLine: lf) meldet dort jede Datei als unformatiert,
+# waehrend dieselbe Pruefung auf dem Linux-Runner gruen ist.
+* text=auto eol=lf
+
+*.ico binary
+*.jpg binary
+*.png binary
+
+# Lockfile ist generiert: in GitHub-Diffs eingeklappt statt tausende Zeilen
+# Rauschen. Bewusst ohne -diff, sonst behandelt auch `git diff` ihn als binaer
+# und man kann lokal nicht mehr nachsehen, was sich geaendert hat.
+pnpm-lock.yaml linguist-generated=true

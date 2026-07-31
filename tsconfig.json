@@ -1,13 +1,29 @@
 {
   "compilerOptions": {
-    "target": "es2017",
+    // Passend zu engines (Node ^20.19 || >=22.12). Das vorherige es2017 war
+    // aelter als jede Laufzeit, die dieses Paket ueberhaupt laden kann, und
+    // verbot nebenbei benannte Capture-Groups (ES2018).
+    "target": "es2022",
     "lib": ["esnext", "DOM"],
     "module": "esnext",
-    "moduleResolution": "node",
+    // "node" (= node10) findet die "exports"-Maps moderner Pakete nicht und
+    // laesst `tsc --noEmit` an @nuxt/kit, vite & Co. scheitern, obwohl der
+    // Build sauber durchlaeuft. tsdown/rolldown bundelt -- "bundler" ist die
+    // Aufloesung, die tatsaechlich zum Buildpfad passt.
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
     "resolveJsonModule": true,
+    "isolatedModules": true,
     "strict": true,
     "strictNullChecks": true,
-    "esModuleInterop": true
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "esModuleInterop": true,
+    // Ohne skipLibCheck bricht der Typecheck in den .d.mts der Dev-Deps
+    // (@nuxt/kit -> nitropack, unimport ...), die hier nicht installiert sind.
+    "skipLibCheck": true,
+    "types": ["node"]
   },
-  "exclude": ["dist", "eslint.config.js"]
+  "include": ["src", "test", "tsdown.config.ts", "vitest.config.ts"],
+  "exclude": ["dist", "node_modules", "playground"]
 }

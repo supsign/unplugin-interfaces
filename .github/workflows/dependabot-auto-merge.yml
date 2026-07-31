@@ -11,37 +11,57 @@ name: Dependabot Auto-Merge
 # Voraussetzung: Auto-Merge muss in den Repo-Settings aktiviert sein UND der
 # Default-Branch braucht einen Required-Status-Check. Ohne Required-Check ist
 # der PR nicht "blocked" und `gh pr merge --auto` bricht ab -- der Merge
-# passiert dann gar nicht. Das ist die sichere Richtung, aber die Automatik
-# laeuft dann eben auch nicht.
+# passiert dann gar nicht. Beides ist eingerichtet: Required-Check ist der
+# Aggregat-Job `ci-ok` aus .github/workflows/ci.yml.
 on: pull_request
 
 permissions:
-    contents: write
-    pull-requests: write
+  contents: write
+  # Labels haengen an der Issues-API. Ohne diese Berechtigung scheitert das
+  # Anlegen des Review-Labels, obwohl pull-requests: write gesetzt ist.
+  issues: write
+  pull-requests: write
 
 jobs:
-    auto-merge:
-        runs-on: ubuntu-latest
-        if: github.actor == 'dependabot[bot]'
+  auto-merge:
+    name: Auto-Merge
+    runs-on: ubuntu-latest
+    # user.login statt github.actor: bei einem manuellen Re-Run waere
+    # github.actor die Person, die neu gestartet hat.
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
 
-        env:
-            PR_URL: ${{ github.event.pull_request.html_url }}
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    env:
+      PR_URL: ${{ github.event.pull_request.html_url }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-        steps:
-            - name: Dependabot-Metadaten holen
-              id: metadata
-              uses: dependabot/fetch-metadata@v3
+    steps:
+      - name: Dependabot-Metadaten holen
+        id: metadata
+        uses: dependabot/fetch-metadata@v3
 
-            - name: Auto-Merge nur fuer patch aktivieren
-              if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
-              run: |
-                  if ! gh pr merge --auto --squash "$PR_URL"; then
-                      echo "::warning::Auto-Merge konnte nicht aktiviert werden. Meist fehlt dem Default-Branch ein Required-Status-Check, dann gilt der PR als nicht blockiert."
-                  fi
+      - name: Auto-Merge nur fuer patch aktivieren
+        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+        run: |
+          if ! gh pr merge --auto --squash "$PR_URL"; then
+              echo "::warning::Auto-Merge konnte nicht aktiviert werden. Meist fehlt dem Default-Branch ein Required-Status-Check, dann gilt der PR als nicht blockiert."
+          fi
 
-            # Bei Gruppen-PRs meldet fetch-metadata das hoechste Update im Bundle --
-            # ein Minor oder Major in der Gruppe macht also den ganzen PR reviewpflichtig.
-            - name: Minor und Major fuer manuelles Review markieren
-              if: steps.metadata.outputs.update-type == 'version-update:semver-minor' || steps.metadata.outputs.update-type == 'version-update:semver-major'
-              run: gh pr edit "$PR_URL" --add-label needs-manual-review
+      # Bei Gruppen-PRs meldet fetch-metadata das hoechste Update im Bundle --
+      # ein Minor oder Major in der Gruppe macht also den ganzen PR reviewpflichtig.
+      # continue-on-error, weil das Label Organisation ist und kein
+      # Qualitaetssignal: ein Fehler beim Setzen darf den PR nicht rot
+      # machen und damit Dependabot blockieren.
+      - name: Minor und Major fuer manuelles Review markieren
+        if: steps.metadata.outputs.update-type == 'version-update:semver-minor' || steps.metadata.outputs.update-type == 'version-update:semver-major'
+        continue-on-error: true
+        run: |
+          # --force legt das Label an oder aktualisiert ein bestehendes.
+          # Fehlte es, lief der Job zuvor in "'needs-manual-review' not
+          # found" und meldete die Pipeline rot -- genau der Zustand, in
+          # dem Dependabot dann haengen bleibt.
+          gh label create needs-manual-review \
+              --color FBCA04 \
+              --description "Dependabot-Update mit minor/major-Anteil: braucht manuelles Review" \
+              --force
+
+          gh pr edit "$PR_URL" --add-label needs-manual-review
