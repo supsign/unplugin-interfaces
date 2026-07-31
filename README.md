@@ -95,8 +95,20 @@ pnpm run test         # Tests
 pnpm run typecheck    # tsc --noEmit
 pnpm run lint         # oxlint
 pnpm run format       # oxfmt
+pnpm run verify:dist  # gebautes Paket pruefen (braucht ein vorheriges build)
 pnpm run play         # Playground mit Vite-Dev-Server
 ```
+
+Die Testsuite hat drei Ebenen:
+
+- **Unit** (`test/generator.test.ts`, `test/paths.test.ts`) -- Erkennung, Dateiauswahl,
+  Ausgabeformat und mtime-Cache gegen Wegwerf-Verzeichnisse.
+- **Integration** (`test/integration.test.ts`) -- ein echter Build mit Rollup, Vite,
+  webpack und esbuild. Die Adapter reichen unterschiedliche Plugin-Kontexte herein;
+  Fehler darin sind gegen einen nachgebauten Kontext nicht sichtbar.
+- **Paket** (`test/package.test.ts`, `scripts/verifyDist.mjs`) -- die exports-Map gegen
+  `src/` und gegen das gebaute `dist/`. Was zwischen Quelle und Auslieferung
+  verrutscht, faellt sonst erst beim Konsumenten auf.
 
 ## Lizenz
 

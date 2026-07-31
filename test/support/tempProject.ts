@@ -27,6 +27,8 @@ export interface TempProject {
   remove: (fileName: string) => Promise<void>;
   /** Liest die generierte Ausgabedatei. */
   read: () => Promise<string>;
+  /** Legt eine Datei relativ zur Projektwurzel an und gibt den Pfad zurueck. */
+  writeAtRoot: (relativePath: string, content: string) => Promise<string>;
 }
 
 export async function createTempProject(files: Record<string, string> = {}): Promise<TempProject> {
@@ -52,6 +54,12 @@ export async function createTempProject(files: Record<string, string> = {}): Pro
     write,
     remove: (fileName) => fs.rm(path.join(interfaceDir, fileName)),
     read: () => fs.readFile(outputFile, 'utf8'),
+    writeAtRoot: async (relativePath, content) => {
+      const target = path.join(root, relativePath);
+      await fs.mkdir(path.dirname(target), { recursive: true });
+      await fs.writeFile(target, content, 'utf8');
+      return target;
+    },
   };
 }
 

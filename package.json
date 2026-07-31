@@ -62,7 +62,8 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify:dist": "node scripts/verifyDist.mjs"
   },
   "dependencies": {
     "unplugin": "^3.0.0"
