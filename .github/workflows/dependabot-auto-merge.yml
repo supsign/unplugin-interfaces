@@ -8,11 +8,21 @@ name: Dependabot Auto-Merge
 # Commits). Ein gruener Lauf belegt damit nicht, dass ein minor-Update
 # folgenlos ist -- er belegt nur, dass die wenigen abgedeckten Pfade halten.
 #
-# Voraussetzung: Auto-Merge muss in den Repo-Settings aktiviert sein UND der
-# Default-Branch braucht einen Required-Status-Check. Ohne Required-Check ist
-# der PR nicht "blocked" und `gh pr merge --auto` bricht ab -- der Merge
-# passiert dann gar nicht. Beides ist eingerichtet: Required-Check ist der
-# Aggregat-Job `ci-ok` aus .github/workflows/ci.yml.
+# Voraussetzungen auf Repo-Seite -- stehen nicht im Repo, deshalb hier notiert:
+#
+#   1. Auto-Merge in den Repo-Settings aktiviert ("Allow auto-merge").
+#   2. Ruleset "main: CI erforderlich" auf dem Default-Branch mit dem
+#      Aggregat-Job `ci-ok` aus ci.yml als Required-Status-Check. Ohne
+#      Required-Check gilt der PR nicht als "blocked", und `gh pr merge --auto`
+#      bricht ab -- der Merge passiert dann schlicht nie.
+#   3. In diesem Ruleset "Require branches to be up to date before merging"
+#      (strict). Der Grund ist subtil: den Merge fuehrt am Ende der
+#      GITHUB_TOKEN aus, und Events aus diesem Token starten keine neuen
+#      Workflow-Laeufe. Auf main laeuft nach einem Auto-Merge also keine CI
+#      mehr. Getestet wurde nur der Merge-Commit des PRs -- und der ist nur
+#      dann aussagekraeftig, wenn der PR aktuell zu main war. Dependabot
+#      rebased selbststaendig, der Aufwand bleibt also bei ihm.
+#   4. Label `needs-manual-review` -- legt der Job unten notfalls selbst an.
 on: pull_request
 
 permissions:
