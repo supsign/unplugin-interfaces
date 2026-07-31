@@ -1,61 +1,80 @@
 version: 2
 
 updates:
-    - package-ecosystem: npm
-      directory: /
-      schedule:
-          interval: weekly
-          day: monday
-          time: '06:00'
-          timezone: Europe/Zurich
-      open-pull-requests-limit: 5
-      # Neue Releases erst nach ein paar Tagen aufgreifen, damit zurueckgezogene
-      # oder sofort nachgepatchte Versionen gar nicht erst einen PR ausloesen.
-      cooldown:
-          default-days: 7
-      commit-message:
-          # prefix bewusst nur 'build': include:scope ergaenzt '(deps)' bzw.
-          # '(deps-dev)' selbst. Mit prefix 'build(deps)' wuerde daraus
-          # 'build(deps)(deps): ...'.
-          prefix: build
-          prefix-development: build
-          include: scope
-      groups:
-          # Alle offenen Security-Advisories in einen PR statt in je einen.
-          npm-security:
-              applies-to: security-updates
-              patterns:
-                  - '*'
-          # Routine-Updates: patch + minor gebuendelt, wird bei gruener CI
-          # automatisch gemergt (siehe .github/workflows/dependabot-auto-merge.yml).
-          npm-routine:
-              applies-to: version-updates
-              patterns:
-                  - '*'
-              update-types:
-                  - minor
-                  - patch
-      # Major-Updates werden bewusst NICHT gruppiert und NICHT auto-gemergt --
-      # die bleiben einzelne PRs mit manuellem Review. Bei einem veroeffentlichten
-      # Paket wandern Breaking Changes sonst ungeprueft zu den Nutzern weiter.
+  # pnpm ist der einzige Paketmanager im Repo: pnpm-lock.yaml ist der einzige
+  # Lockfile, playground haengt als Workspace-Paket daran. Dependabot updatet
+  # Workspace-Mitglieder ueber die Wurzel mit -- ein eigener Eintrag fuer
+  # /playground ist weder noetig noch gewollt. Solange dort ein eigener
+  # package-lock.json lag, hat Dependabot ihn als zweites, unabhaengiges
+  # Projekt behandelt und ist an dessen veralteten transitiven Versionen
+  # reihenweise mit "security_update_not_possible" gescheitert.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/Zurich
+    open-pull-requests-limit: 5
+    # Neue Releases erst nach ein paar Tagen aufgreifen, damit zurueckgezogene
+    # oder sofort nachgepatchte Versionen gar nicht erst einen PR ausloesen.
+    cooldown:
+      default-days: 7
+    commit-message:
+      # prefix bewusst nur 'build': include:scope ergaenzt '(deps)' bzw.
+      # '(deps-dev)' selbst. Mit prefix 'build(deps)' wuerde daraus
+      # 'build(deps)(deps): ...'.
+      prefix: build
+      prefix-development: build
+      include: scope
+    groups:
+      # Alle offenen Security-Advisories in einen PR statt in je einen.
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - '*'
+      # patch und minor bewusst GETRENNT, nicht wie zuvor gemeinsam als
+      # "Routine": Auto-Merge greift nur bei patch, und fetch-metadata
+      # meldet fuer einen Gruppen-PR das hoechste Update im Bundle. Ein
+      # einziges minor in der Sammelgruppe machte damit den kompletten PR
+      # reviewpflichtig -- automatisch gemergt wurde faktisch nie etwas.
+      npm-patch:
+        applies-to: version-updates
+        patterns:
+          - '*'
+        update-types:
+          - patch
+      npm-minor:
+        applies-to: version-updates
+        patterns:
+          - '*'
+        update-types:
+          - minor
+    # Major-Updates werden bewusst NICHT gruppiert und NICHT auto-gemergt --
+    # die bleiben einzelne PRs mit manuellem Review. Bei einem veroeffentlichten
+    # Paket wandern Breaking Changes sonst ungeprueft zu den Nutzern weiter.
 
-    - package-ecosystem: github-actions
-      directory: /
-      schedule:
-          interval: monthly
-          timezone: Europe/Zurich
-      open-pull-requests-limit: 3
-      # github-actions unterstuetzt nur default-days -- die semver-*-Keys werden
-      # von Dependabot als ungueltig abgelehnt und blockieren die ganze Config.
-      cooldown:
-          default-days: 7
-      commit-message:
-          prefix: build
-          include: scope
-      groups:
-          github-actions:
-              patterns:
-                  - '*'
-              update-types:
-                  - minor
-                  - patch
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+      timezone: Europe/Zurich
+    open-pull-requests-limit: 3
+    # github-actions unterstuetzt nur default-days -- die semver-*-Keys werden
+    # von Dependabot als ungueltig abgelehnt und blockieren die ganze Config.
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      github-actions-patch:
+        patterns:
+          - '*'
+        update-types:
+          - patch
+      github-actions-minor:
+        patterns:
+          - '*'
+        update-types:
+          - minor

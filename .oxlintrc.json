@@ -35,6 +35,7 @@
     "no-undefined": "off",
     "oxc/no-async-await": "off",
     "oxc/no-optional-chaining": "off",
+    "oxc/no-rest-spread-properties": "off",
     "prefer-destructuring": "off",
     "sort-imports": "off",
     "sort-keys": "off",

@@ -9,49 +9,133 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
+# Pro Branch/PR nur den jeweils neuesten Lauf behalten.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  lint:
+  verify:
+    name: Verify
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Set node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+
+      # Muss vor setup-node laufen: sonst findet `cache: pnpm` das
+      # Binary nicht und der Cache-Schritt bricht ab. Die Version zieht
+      # die Action aus dem packageManager-Feld der package.json.
+      - name: pnpm einrichten
+        uses: pnpm/action-setup@v6
+
+      - name: Node einrichten
+        uses: actions/setup-node@v7
         with:
           node-version: lts/*
+          cache: pnpm
 
-      - name: Setup
-        run: npm i -g @antfu/ni
-
-      - name: Install
-        run: nci
+      - name: Abhaengigkeiten installieren
+        run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: nr lint
+        run: pnpm run lint
+
+      - name: Formatierung pruefen
+        run: pnpm run format:check
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Tests mit Coverage
+        run: pnpm run test:coverage
 
   test:
+    name: Test (${{ matrix.os }}, node ${{ matrix.node }})
     runs-on: ${{ matrix.os }}
 
     strategy:
-      matrix:
-        node: [lts/*]
-        os: [ubuntu-latest, windows-latest, macos-latest]
       fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: [lts/*]
+        # Zweitaeltestes unterstuetztes Node, damit ein Update nicht
+        # unbemerkt die untere Grenze aus engines anhebt. Aelter geht
+        # nicht: tsdown verlangt >= 22.18 fuer den Build.
+        include:
+          - os: ubuntu-latest
+            node: '22'
 
     steps:
-      - uses: actions/checkout@v4
-      - name: Set node ${{ matrix.node }}
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+
+      - name: pnpm einrichten
+        uses: pnpm/action-setup@v6
+
+      - name: Node ${{ matrix.node }} einrichten
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
+          cache: pnpm
 
-      - name: Setup
-        run: npm i -g @antfu/ni
-
-      - name: Install
-        run: nci
+      - name: Abhaengigkeiten installieren
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: nr build
+        run: pnpm run build
 
-      - name: Test
-        run: nr test
+      - name: Tests
+        run: pnpm run test
+
+  playground:
+    name: Playground
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: pnpm einrichten
+        uses: pnpm/action-setup@v6
+
+      - name: Node einrichten
+        uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      - name: Abhaengigkeiten installieren
+        run: pnpm install --frozen-lockfile
+
+      # End-to-End mit echtem Vite und echter Plugin-Pipeline. Die
+      # generierte Datei wird vorher geloescht, sonst greift der
+      # mtime-Cache: nach einem Checkout traegt sie dieselbe Zeit wie
+      # die Quellen und der Lauf wuerde uebersprungen -- der Job
+      # pruefte dann nur noch die eingecheckte Datei.
+      - name: Playground bauen
+        working-directory: playground
+        run: |
+          rm -f src/types/interfaces.d.ts
+          pnpm run build
+
+      # Golden File: die neu erzeugte Datei muss Zeichen fuer Zeichen der
+      # eingecheckten entsprechen. Aendert der Generator seine Ausgabe,
+      # faellt das hier auf und nicht erst beim Konsumenten.
+      - name: Generierte Deklarationen gegen den Stand im Repo pruefen
+        run: git diff --exit-code -- playground/src/types/interfaces.d.ts
+
+  # Einziger Required-Status-Check des Default-Branch. Ein Aggregat statt der
+  # einzelnen Jobs, weil Matrix-Checknamen sich mit jeder Matrix-Aenderung
+  # verschieben -- ein Required-Check mit veraltetem Namen blockiert dann
+  # jeden PR dauerhaft. Ausserdem greift Dependabot-Auto-Merge nur, wenn ein
+  # Required-Check den PR ueberhaupt als "blocked" markiert.
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs: [verify, test, playground]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ergebnis der vorgelagerten Jobs auswerten
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "::error::Mindestens ein CI-Job ist fehlgeschlagen oder wurde abgebrochen."
+          exit 1
