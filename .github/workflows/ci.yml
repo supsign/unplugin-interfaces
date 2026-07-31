@@ -85,6 +85,12 @@ jobs:
       - name: Build
         run: pnpm run build
 
+      # Prueft das gebaute Paket statt der Quellen: exports-Map, ladbare
+      # Einstiegspunkte, Typdeklarationen. Die Tests importieren aus src/ --
+      # was zwischen src/ und dist/ schiefgeht, sehen sie nicht.
+      - name: Gebautes Paket pruefen
+        run: pnpm run verify:dist
+
       - name: Tests
         run: pnpm run test
 
