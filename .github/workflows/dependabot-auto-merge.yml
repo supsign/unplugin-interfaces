@@ -33,6 +33,12 @@ jobs:
     env:
       PR_URL: ${{ github.event.pull_request.html_url }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Der Job checkt bewusst nichts aus. Ohne GH_REPO leitet die gh-CLI das
+      # Repository aus `git remote` ab und bricht dann mit "fatal: not a git
+      # repository" ab. `gh pr ...` kommt daran vorbei, weil es die URL im
+      # Argument hat -- `gh label create` nimmt keine URL und lief genau
+      # deshalb ins Leere.
+      GH_REPO: ${{ github.repository }}
 
     steps:
       - name: Dependabot-Metadaten holen
