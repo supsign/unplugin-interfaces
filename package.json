@@ -58,6 +58,7 @@
     "play": "pnpm -C playground run dev",
     "prepublishOnly": "pnpm run build",
     "release": "bumpp && pnpm publish",
+    "skills": "skills experimental_sync -y",
     "start": "tsx src/index.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
@@ -80,6 +81,7 @@
     "oxfmt": "^0.62.0",
     "oxlint": "^1.55.0",
     "rollup": "^4.59.0",
+    "skills": "^1.5.23",
     "tsdown": "^0.22.13",
     "tsx": "^4.21.0",
     "typescript": "^7.0.2",
@@ -118,6 +120,9 @@
     "webpack": {
       "optional": true
     }
+  },
+  "optionalDependencies": {
+    "@supsign/skills": "^1.0.0"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
