@@ -79,3 +79,10 @@ dist
 
 # IDE
 .idea
+
+# Agent Skills — kommen aus @supsign/skills, nicht ins Repo
+.agents/
+.claude/skills/
+.cursor/skills/
+.github/skills/
+agent/

@@ -1,5 +1,13 @@
 version: 2
 
+# @supsign/skills liegt auf GitHub Packages. Ohne diesen Zugang kann Dependabot
+# das Paket nicht aufloesen und bietet keine Updates dafuer an.
+registries:
+  github-npm:
+    type: npm-registry
+    url: https://npm.pkg.github.com
+    token: ${{secrets.PACKAGES_READ_TOKEN}}
+
 updates:
   # pnpm ist der einzige Paketmanager im Repo: pnpm-lock.yaml ist der einzige
   # Lockfile, playground haengt als Workspace-Paket daran. Dependabot updatet
@@ -10,6 +18,8 @@ updates:
   # reihenweise mit "security_update_not_possible" gescheitert.
   - package-ecosystem: npm
     directory: /
+    registries:
+      - github-npm
     schedule:
       interval: weekly
       day: monday
