@@ -1,3 +1,20 @@
+# Dependabot-Standard fuer supsign-Repos.
+# Vorlage: https://github.com/supsign/.github/blob/main/templates/dependabot.yml
+#
+# Uebernehmen, nicht benoetigte Oekosysteme loeschen. Repo-spezifisch sind nur:
+#   - registries: private Pakete (@supsign/* auf GitHub Packages, Spatie Satis),
+#     nur mit vorhandenem Dependabot-Secret
+#   - weitere Oekosysteme (z.B. pip), nach demselben Muster
+#   - ignore: Pakete, die nachweislich nicht gehoben werden koennen, jeweils mit
+#     Grund im Kommentar
+# Alles andere bleibt wie hier, damit die zentrale Policy ueberall gleich greift.
+#
+# Warum die Gruppen so geschnitten sind:
+#   - patch und minor getrennt: ein Minor, das die CI bricht, haelt die Patches
+#     nicht auf. Ausserdem meldet fetch-metadata pro PR nur das hoechste Update.
+#   - Security nur patch und minor: ein Security-Major kommt als eigener PR und
+#     blockiert keine harmlosen Security-Patches.
+#   - Majors ungruppiert: jeder braucht ein eigenes Review.
 version: 2
 
 # @supsign/skills liegt auf GitHub Packages. Ohne diesen Zugang kann Dependabot
@@ -26,43 +43,29 @@ updates:
       time: '06:00'
       timezone: Europe/Zurich
     open-pull-requests-limit: 5
-    # Neue Releases erst nach ein paar Tagen aufgreifen, damit zurueckgezogene
-    # oder sofort nachgepatchte Versionen gar nicht erst einen PR ausloesen.
+    # Neue Releases erst nach ein paar Tagen aufgreifen: zurueckgezogene oder
+    # sofort nachgepatchte Versionen erzeugen dann gar keinen PR.
     cooldown:
       default-days: 7
+      semver-major-days: 14
     commit-message:
-      # prefix bewusst nur 'build': include:scope ergaenzt '(deps)' bzw.
-      # '(deps-dev)' selbst. Mit prefix 'build(deps)' wuerde daraus
-      # 'build(deps)(deps): ...'.
+      # include: scope ergaenzt (deps) bzw. (deps-dev) selbst.
       prefix: build
       prefix-development: build
       include: scope
     groups:
-      # Alle offenen Security-Advisories in einen PR statt in je einen.
-      npm-security:
-        applies-to: security-updates
-        patterns:
-          - '*'
-      # patch und minor bewusst GETRENNT, nicht wie zuvor gemeinsam als
-      # "Routine": Auto-Merge greift nur bei patch, und fetch-metadata
-      # meldet fuer einen Gruppen-PR das hoechste Update im Bundle. Ein
-      # einziges minor in der Sammelgruppe machte damit den kompletten PR
-      # reviewpflichtig -- automatisch gemergt wurde faktisch nie etwas.
       npm-patch:
         applies-to: version-updates
-        patterns:
-          - '*'
-        update-types:
-          - patch
+        patterns: ['*']
+        update-types: [patch]
       npm-minor:
         applies-to: version-updates
-        patterns:
-          - '*'
-        update-types:
-          - minor
-    # Major-Updates werden bewusst NICHT gruppiert und NICHT auto-gemergt --
-    # die bleiben einzelne PRs mit manuellem Review. Bei einem veroeffentlichten
-    # Paket wandern Breaking Changes sonst ungeprueft zu den Nutzern weiter.
+        patterns: ['*']
+        update-types: [minor]
+      npm-security:
+        applies-to: security-updates
+        patterns: ['*']
+        update-types: [patch, minor]
 
   - package-ecosystem: github-actions
     directory: /
@@ -70,21 +73,17 @@ updates:
       interval: monthly
       timezone: Europe/Zurich
     open-pull-requests-limit: 3
-    # github-actions unterstuetzt nur default-days -- die semver-*-Keys werden
-    # von Dependabot als ungueltig abgelehnt und blockieren die ganze Config.
+    # github-actions kennt nur default-days, die semver-*-Keys lehnt
+    # Dependabot ab und verwirft dann die ganze Datei.
     cooldown:
       default-days: 7
     commit-message:
       prefix: build
       include: scope
     groups:
-      github-actions-patch:
-        patterns:
-          - '*'
-        update-types:
-          - patch
-      github-actions-minor:
-        patterns:
-          - '*'
-        update-types:
-          - minor
+      actions-patch:
+        patterns: ['*']
+        update-types: [patch]
+      actions-minor:
+        patterns: ['*']
+        update-types: [minor]

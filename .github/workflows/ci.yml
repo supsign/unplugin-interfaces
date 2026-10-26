@@ -129,13 +129,13 @@ jobs:
       - name: Generierte Deklarationen gegen den Stand im Repo pruefen
         run: git diff --exit-code -- playground/src/types/interfaces.d.ts
 
-  # Einziger Required-Status-Check des Default-Branch. Ein Aggregat statt der
-  # einzelnen Jobs, weil Matrix-Checknamen sich mit jeder Matrix-Aenderung
-  # verschieben -- ein Required-Check mit veraltetem Namen blockiert dann
-  # jeden PR dauerhaft. Ausserdem greift Dependabot-Auto-Merge nur, wenn ein
-  # Required-Check den PR ueberhaupt als "blocked" markiert.
-  ci-ok:
-    name: ci-ok
+  # Standard aus https://github.com/supsign/.github: einziger Required-Status-
+  # Check des Default-Branch. Ein Aggregat statt der einzelnen Jobs, weil
+  # Matrix-Checknamen sich mit jeder Matrix-Aenderung verschieben -- ein
+  # Required-Check mit veraltetem Namen blockiert dann jeden PR dauerhaft.
+  # In `needs` stehen alle Jobs dieser Datei.
+  ci:
+    name: ci
     if: always()
     needs: [verify, test, playground]
     runs-on: ubuntu-latest
@@ -145,3 +145,12 @@ jobs:
         run: |
           echo "::error::Mindestens ein CI-Job ist fehlgeschlagen oder wurde abgebrochen."
           exit 1
+      - run: echo "Alle Jobs gruen."
+
+  # Zentrale Dependabot-Automatik, startet nur bei gruenem ci.
+  dependabot:
+    needs: ci
+    uses: supsign/.github/.github/workflows/dependabot.yml@main
+    permissions:
+      contents: write
+      pull-requests: write
