@@ -150,6 +150,8 @@ jobs:
   # Zentrale Dependabot-Automatik, startet nur bei gruenem ci.
   dependabot:
     needs: ci
+    # Pflicht: ohne if prueft das implizite success() alle Vorgaenger-Jobs, ein uebersprungener reicht und dependabot laeuft trotz gruenem ci nicht.
+    if: ${{ !cancelled() && needs.ci.result == 'success' }}
     uses: supsign/.github/.github/workflows/dependabot.yml@main
     permissions:
       contents: write
